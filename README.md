@@ -1,131 +1,119 @@
-# Android OTP Authentication App
+# 🔐 Android Passwordless Authentication App (Email + OTP)
 
-## Project Overview
-This Android application implements a **passwordless Email + OTP authentication system** using **Kotlin** and **Jetpack Compose**.  
-The project follows modern Android development practices and is designed to be stable, readable, and recruiter-friendly.
+## 📌 Overview
+This project demonstrates a **passwordless authentication flow** using **Email + OTP**, followed by a **session tracking screen**.  
+All OTP logic is implemented **locally**, with **Firebase SDK** used only for logging and analytics, as required by the assignment.
 
-This application demonstrates:
-- OTP generation and validation
-- Proper expiry and retry handling
-- Safe background processing
-- Clean UI state management
-- Debug-friendly local OTP verification
+🎥 A complete working demo is provided in the uploaded video.
 
 ---
 
-## 1. OTP Logic and Expiry Handling
+## 🛠 Tech Stack
+- **Language:** Kotlin  
+- **UI:** Jetpack Compose  
+- **Architecture:** MVVM (ViewModel + UI State)  
+- **Async:** Kotlin Coroutines  
+- **SDK:** Firebase (Analytics / Logging)  
+- **IDE:** Android Studio  
+
+---
+
+## 🔢 OTP Logic (Core Requirement)
 
 ### OTP Generation
-- A **6-digit numeric OTP** is generated when the user clicks **Send OTP**.
-- OTP is generated per email ID.
-- Generating a new OTP invalidates the previous OTP for that email.
+- Implemented via `generateOtp`
+- **6-digit numeric OTP**, generated locally
+- OTP stored **per email**
+- Regenerating OTP:
+  - Invalidates previous OTP
+  - Resets attempt count
 
-### OTP Expiry
-- OTP validity: **60 seconds**
-- Expiry is calculated using:
+### OTP Verification
+- Implemented via `verifyOtp`
+- Validation includes:
+  - OTP match check
+  - **60-second expiry**
+  - **Maximum 3 attempts**
 
-- If the OTP is expired, verification fails and the user must request a new OTP.
-
-### Attempt Limit
-- Maximum **3 attempts** are allowed.
-- After 3 incorrect attempts:
-- OTP becomes invalid
-- User must request a new OTP
-
-### Thread Safety
-- OTP generation and verification run on **Dispatchers.IO**.
-- Prevents UI freezing and ANR issues.
-
----
-
-## 2. Data Structures Used and Why
-
-### ConcurrentHashMap<String, OtpData>
-- Stores OTP details mapped to email.
-- Thread-safe and safe for background execution.
-- Prevents race conditions.
-
-### OtpData (Data Class)
-Stores:
-- OTP value
-- Expiry time
-- Attempt count
-
-This keeps OTP handling structured and easy to maintain.
-
-### AuthUiState (Sealed Interface)
-Represents UI states:
-- Login
-- Loading
-- OTP Sent
-- Logged In
-
-This ensures:
-- Safe UI rendering
-- No invalid UI states
-- Better readability and maintainability
+### Attempt & Resend Handling
+- Only **3 attempts** allowed
+- After limit exceeded:
+  - OTP becomes invalid
+  - Login is blocked
+  - User must **resend OTP**
+- Resend generates a fresh OTP and resets attempts
 
 ---
 
-## 3. External SDKs / Libraries Used
+## ⏱ OTP Rules
+- **Length:** 6 digits  
+- **Expiry:** 60 seconds  
+- **Attempts:** Max 3  
 
-### Jetpack Compose (Material 3)
-- Modern declarative UI
-- Less boilerplate
-- Recommended by Google
-
-### Kotlin Coroutines & StateFlow
-- Background execution
-- UI-safe state updates
-- Prevents ANR issues
-
-### ViewModel
-- Preserves state across screen rotation
-- Separates UI and business logic
-
-### Compose BOM (Bill of Materials)
-- Ensures all Compose dependencies are version-aligned
-- Prevents runtime crashes caused by binary incompatibility
-
-### Timber (Analytics Simulation)
-- Lightweight logging
-- Easy to replace with Firebase Analytics
+✔ Enforced fully **locally** (no backend).
 
 ---
 
-## 4. GPT Usage vs Human Implementation
+## 🗂 Data Structures
+- `Map<String, OtpData>`
+  - **Key:** Email  
+  - **Value:** OTP, timestamp, attempt count  
 
-### GPT Used For
-- Generating Compose UI boilerplate
-- Gradle dependency setup
-- Debugging Compose version conflicts
-- Suggesting performance fixes
-
-### Human Implemented and Understood
-- OTP logic
-- Expiry and attempt handling
-- Threading decisions
-- ANR and crash fixes using Logcat
-- Project structure and Git workflow
-
-All logic was reviewed, tested, and understood before final implementation.
+**Reason:** Fast lookup, clean per-user state, clear separation of logic.
 
 ---
 
-## How to Run the Project
+## 🕒 Session Screen
+After successful login:
+- Shows **session start time**
+- Displays **live duration (mm:ss)**
+- Logout ends the session
 
-1. Open the project in **Android Studio**
-2. Sync Gradle
-3. Run on emulator or physical device
-4. Enter an email and click **Send OTP**
-5. Check **Logcat** (filter: `OTP`) to see the OTP (local testing)
-6. Enter OTP and verify login
-7. Session screen will appear
-8. Rotate screen to verify state persistence
+**Timer behavior:**
+- Uses **Coroutines**
+- Survives recompositions & screen rotation
+- Stops correctly on logout
 
 ---
 
-## Notes
-- This project uses **local OTP logging** for testing.
-- No external SMS or Email API is required.
-- Designed to be easily extendable to real backend OTP services.
+## 📊 External SDK (Firebase)
+Firebase SDK is properly integrated for **event logging only**.
+
+**Logged events:**
+- OTP generated  
+- OTP validation success  
+- OTP validation failure  
+- Logout  
+
+---
+
+## 🧠 Architecture & Compose
+- One-way data flow
+- ViewModel handles business logic
+- UI observes immutable state
+- No UI logic in ViewModel
+- No global mutable state
+
+**Compose APIs used:**  
+`@Composable`, `remember`, `rememberSaveable`, `LaunchedEffect`, state hoisting
+
+---
+
+## ⚠️ Edge Cases Covered
+- Expired OTP  
+- Incorrect OTP  
+- Attempt limit exceeded  
+- Resend OTP flow  
+- Screen rotation without state loss  
+- Proper logout cleanup  
+
+---
+
+## 🤖 GPT Usage
+GPT was used only for **concept clarification and best practices**.  
+All OTP logic, session handling, and Firebase integration were **understood and implemented manually**.
+
+---
+## ▶️ Setup
+```bash
+git clone https://github.com/Vinay23145/AndriodApp.git
