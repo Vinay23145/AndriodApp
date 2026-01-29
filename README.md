@@ -1,64 +1,131 @@
 # Android OTP Authentication App
 
-## Overview
-A production-quality Android application demonstrating a passwordless **Email + OTP** authentication flow. Built with **Kotlin** and **Jetpack Compose**, following modern Android architectural patterns (MVVM + UDF).
+## Project Overview
+This Android application implements a **passwordless Email + OTP authentication system** using **Kotlin** and **Jetpack Compose**.  
+The project follows modern Android development practices and is designed to be stable, readable, and recruiter-friendly.
 
-This project was built to demonstrate clean code, correct state management, and robustness in handling edge cases like screen rotation and process death.
+This application demonstrates:
+- OTP generation and validation
+- Proper expiry and retry handling
+- Safe background processing
+- Clean UI state management
+- Debug-friendly local OTP verification
 
-## 🏗️ Tech Stack
+---
 
-*   **Language:** Kotlin
-*   **UI:** Jetpack Compose (Material3)
-*   **Architecture:** MVVM (Model-View-ViewModel) + UDF (Unidirectional Data Flow)
-*   **Concurrency:** Kotlin Coroutines & Flow
-*   **Logging/Analytics:** Timber (simulating Analytics)
-*   **Build System:** Gradle (Kotlin DSL) + Version Catalog
+## 1. OTP Logic and Expiry Handling
 
-## 🧩 Architecture Decisions
+### OTP Generation
+- A **6-digit numeric OTP** is generated when the user clicks **Send OTP**.
+- OTP is generated per email ID.
+- Generating a new OTP invalidates the previous OTP for that email.
 
-### UI Layer
-The UI is built using **Jetpack Compose**.
-*   **Single Activity:** `MainActivity` hosts the navigation logic.
-*   **State Hoisting:** All screens (`LoginScreen`, `OtpScreen`, `SessionScreen`) are stateless and receive state/callbacks from `AuthNavigation` (which observes the ViewModel).
-*   **State Management:** `AuthUiState` is a sealed interface representing the exhaustive states of the screen (`Login`, `Loading`, `OtpSent`, `LoggedIn`). This ensures the UI always renders a valid state.
+### OTP Expiry
+- OTP validity: **60 seconds**
+- Expiry is calculated using:
 
-### Data Layer
-*   **OtpManager:** A Singleton object acting as the Data Source. It handles:
-    *   OTP Generation (Random 6 digits).
-    *   Storage (In-memory `Map<String, OtpData>`).
-    *   Validation Logic (Expiry check, Attempt limits, Code matching).
-    *   *Note: In a fully scaled app, this would be a Repository backed by a Remote Data Source (API).*
+- If the OTP is expired, verification fails and the user must request a new OTP.
 
-### Analytics
-*   **Timber:** Selected for its simplicity and ubiquity in the Android ecosystem.
-*   **AnalyticsLogger:** A wrapper object around Timber to simulate structured event logging (e.g., `OTP_Generated`, `Logout`). This abstraction allows easily swapping the underlying implementation (e.g., to Firebase) without changing call sites.
+### Attempt Limit
+- Maximum **3 attempts** are allowed.
+- After 3 incorrect attempts:
+- OTP becomes invalid
+- User must request a new OTP
 
-## ⚡ Key Features & Logic
+### Thread Safety
+- OTP generation and verification run on **Dispatchers.IO**.
+- Prevents UI freezing and ANR issues.
 
-### 1. OTP Handling
-*   **Generation:** A cryptographically secure random number is not strictly necessary for this demo, so standard `Random` is used for 6 digits.
-*   **Expiry:** OTPs are valid for **60 seconds**. Validation checks `System.currentTimeMillis() > expiryTime`.
-*   **Storage:** Stored in `OtpManager` keyed by Email. Generating a new OTP for the same email overwrites the previous one (invalidating it).
-*   **Attempts:** Max **3 attempts**. After 3 failed tries, the OTP is invalidated for security.
+---
 
-### 2. Session Management
-*   **Timer:** Managed by `AuthViewModel` using a Coroutine loop (`while(true) delay(1000)`).
-*   **Process Death:** The implementation focuses on in-memory state. For full process death survival, `SavedStateHandle` would be integrated, but `rememberSaveable` handles configuration changes (rotation) gracefully for local UI state. ViewModel survives rotation, keeping the timer running.
+## 2. Data Structures Used and Why
 
-## 🤖 AI Assistance vs. Human Engineering
+### ConcurrentHashMap<String, OtpData>
+- Stores OTP details mapped to email.
+- Thread-safe and safe for background execution.
+- Prevents race conditions.
 
-*   **Architecture & Structure:** Human-designed. The decision to use a sealed `AuthUiState` and a dedicated `OtpManager` was made to ensure separation of concerns and testability.
-*   **Boilerplate Generation:** AI was used to generate standard Compose boilerplate (Scaffolds, TextFields) and Gradle build files to speed up setup.
-*   **Logic Verification:** AI assisted in double-checking the edge case logic (e.g., ensure timer stops on logout).
+### OtpData (Data Class)
+Stores:
+- OTP value
+- Expiry time
+- Attempt count
 
-## 🚀 How to Run
+This keeps OTP handling structured and easy to maintain.
 
-1.  Open the project in **Android Studio**.
-2.  Sync Gradle.
-3.  Run on an Emulator or Physical Device.
-4.  **Testing Flow:**
-    *   Enter a valid email.
-    *   Check **Logcat** (filter for "OTP") to see the generated code.
-    *   Enter the code to login.
-    *   Watch the session timer.
-    *   Rotate the device to verify state persistence.
+### AuthUiState (Sealed Interface)
+Represents UI states:
+- Login
+- Loading
+- OTP Sent
+- Logged In
+
+This ensures:
+- Safe UI rendering
+- No invalid UI states
+- Better readability and maintainability
+
+---
+
+## 3. External SDKs / Libraries Used
+
+### Jetpack Compose (Material 3)
+- Modern declarative UI
+- Less boilerplate
+- Recommended by Google
+
+### Kotlin Coroutines & StateFlow
+- Background execution
+- UI-safe state updates
+- Prevents ANR issues
+
+### ViewModel
+- Preserves state across screen rotation
+- Separates UI and business logic
+
+### Compose BOM (Bill of Materials)
+- Ensures all Compose dependencies are version-aligned
+- Prevents runtime crashes caused by binary incompatibility
+
+### Timber (Analytics Simulation)
+- Lightweight logging
+- Easy to replace with Firebase Analytics
+
+---
+
+## 4. GPT Usage vs Human Implementation
+
+### GPT Used For
+- Generating Compose UI boilerplate
+- Gradle dependency setup
+- Debugging Compose version conflicts
+- Suggesting performance fixes
+
+### Human Implemented and Understood
+- OTP logic
+- Expiry and attempt handling
+- Threading decisions
+- ANR and crash fixes using Logcat
+- Project structure and Git workflow
+
+All logic was reviewed, tested, and understood before final implementation.
+
+---
+
+## How to Run the Project
+
+1. Open the project in **Android Studio**
+2. Sync Gradle
+3. Run on emulator or physical device
+4. Enter an email and click **Send OTP**
+5. Check **Logcat** (filter: `OTP`) to see the OTP (local testing)
+6. Enter OTP and verify login
+7. Session screen will appear
+8. Rotate screen to verify state persistence
+
+---
+
+## Notes
+- This project uses **local OTP logging** for testing.
+- No external SMS or Email API is required.
+- Designed to be easily extendable to real backend OTP services.
